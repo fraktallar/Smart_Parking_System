@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akıllı Otopark Rezervasyon Portalı</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; background-color: #f4f6f9; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; }
+        .card { border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        button { background-color: #007bff; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 4px; font-weight: bold; }
+        button:hover { background-color: #0056b3; }
+        button.danger { background-color: #dc3545; }
+        button.danger:hover { background-color: #bd2130; }
+        pre { background: #1e1e1e; color: #00ff66; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        .badge { padding: 5px 10px; border-radius: 3px; color: white; font-weight: bold; }
+        .PENDING { background-color: #ffc107; color: black; }
+        .CONFIRMED { background-color: #28a745; }
+        .CANCELLED { background-color: #dc3545; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🚗 Akıllı Otopark Rezervasyon Sistemi</h1>
+    <p> Servise Dayalı Yazılım Tasarımı - API Gateway Portal</p>
+    <hr>
+
+    <!-- 1. Giriş Yap Ekranı -->
+    <div class="card">
+        <h2>1. Kimlik Doğrulama (Auth)</h2>
+        <input type="email" id="email" value="ahmet@example.com">
+        <input type="password" id="password" value="123456">
+        <button onclick="login()">Giriş Yap (JWT Al)</button>
+        <span id="authStatus" style="margin-left: 10px;"></span>
+    </div>
+
+    <!-- 2. Rezervasyon Oluşturma (Saga Trigger) -->
+    <div class="card">
+        <h2>2. Rezervasyon Oluştur (Saga Akışı)</h2>
+        <label>Park Yeri ID:</label>
+        <input type="text" id="spotId" value="SPOT-102">
+        
+        <label>Tutar (TL):</label>
+        <input type="number" id="amount" value="150">
+        
+        <button onclick="createReservation()">Rezervasyon Yap (Başarılı Senaryo)</button>
+        <button class="danger" onclick="triggerCompensate()">Ödeme Başarısız Senaryosu (Telafi/Saga Testi)</button>
+    </div>
+
+    <!-- 3. Sensör Simülasyonu & Ek Ücret (Serverless) -->
+    <div class="card">
+        <h2>3. Sensör & Çıkış Ek Ücret Simülasyonu (Serverless)</h2>
+        <button onclick="simulateExit(0)">Zamanında Çıkış Yap (0 TL Ek Ücret)</button>
+        <button class="danger" onclick="simulateExit(90)">90 Dk Gecikmeli Çıkış (Ek Ücret Hesapla)</button>
+    </div>
+
+    <!-- Canlı Log ve Durum Çıktısı -->
+    <h2>📊 Sistem Yanıtı & Correlation Logları</h2>
+    <pre id="logOutput">// Gateway ve Mikroservis yanıtları burada görünecektir...</pre>
+</div>
+
+<script>
+    let token = "";
+
+    async function login() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        const res = await fetch('/api/v1/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (data.token) {
+            token = data.token;
+            document.getElementById('authStatus').innerText = "✅ Giriş Başarılı!";
+        }
+        document.getElementById('logOutput').innerText = JSON.stringify(data, null, 2);
+    }
+
+    async function createReservation() {
+        const spotId = document.getElementById('spotId').value;
+        const amount = document.getElementById('amount').value;
+
+        const res = await fetch('/api/v1/reservations', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ userId: "USR-101", parkingSpotId: spotId, amount: Number(amount) })
+        });
+        const data = await res.json();
+        document.getElementById('logOutput').innerText = "[SAGA TETİKLENDİ]\n" + JSON.stringify(data, null, 2);
+    }
+
+    async function triggerCompensate() {
+        // Tutar 500 TL üzeri olunca ödeme servisi telafi adımı tetikliyor
+        document.getElementById('amount').value = 999;
+        await createReservation();
+    }
+
+    async function simulateExit(delayMinutes) {
+        const now = new Date();
+        const reservedEndTime = new Date(now.getTime() - (delayMinutes * 60000)).toISOString();
+        const actualExitTime = now.toISOString();
+
+        // Serverless fonksiyon simulasyonu
+        const res = await fetch('/api/v1/sensors/events', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                eventType: "EXIT",
+                reservedEndTime,
+                actualExitTime
+            })
+        });
+        const data = await res.json();
+        document.getElementById('logOutput').innerText = "[SERVERLESS EK ÜCRET YANITI]\n" + JSON.stringify(data, null, 2);
+    }
+</script>
+
+</body>
+</html>

@@ -2,6 +2,7 @@
 const express = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const crypto = require('crypto');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -21,6 +22,7 @@ app.use('/api/v1/parkings', createProxyMiddleware({ target: process.env.PARKING_
 app.use('/api/v2/parkings', createProxyMiddleware({ target: process.env.PARKING_SERVICE_URL, changeOrigin: true })); // Versiyonlama
 app.use('/api/v1/reservations', createProxyMiddleware({ target: process.env.RESERVATION_SERVICE_URL, changeOrigin: true }));
 app.use('/api/v1/payments', createProxyMiddleware({ target: process.env.PAYMENT_SERVICE_URL, changeOrigin: true }));
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.listen(PORT, () => {
   console.log(`API Gateway ${PORT} portunda çalışıyor.`);
