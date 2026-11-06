@@ -1,0 +1,132 @@
+version: '3.8'
+
+services:
+  # --- MESAJ KUYRUĞU (RABBITMQ) ---
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: parking_rabbitmq
+    ports:
+      - "5672:5672"   # AMQP portu
+      - "15672:15672" # Management Dashboard (http://localhost:15672)
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - parking-net
+
+  # --- VERİTABANLARI (Her servise ayrı DB) ---
+  auth-db:
+    image: postgres:15-alpine
+    container_name: auth_db
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    networks:
+      - parking-net
+
+  parking-db:
+    image: postgres:15-alpine
+    container_name: parking_db
+    environment:
+      POSTGRES_DB: parking_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    networks:
+      - parking-net
+
+  reservation-db:
+    image: postgres:15-alpine
+    container_name: reservation_db
+    environment:
+      POSTGRES_DB: reservation_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    networks:
+      - parking-net
+
+  payment-db:
+    image: postgres:15-alpine
+    container_name: payment_db
+    environment:
+      POSTGRES_DB: payment_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    networks:
+      - parking-net
+
+  # --- API GATEWAY ---
+  api-gateway:
+    build: ./api-gateway
+    container_name: api_gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - PARKING_SERVICE_URL=http://parking-service:3002
+      - RESERVATION_SERVICE_URL=http://reservation-service:3003
+      - PAYMENT_SERVICE_URL=http://payment-service:3004
+    depends_on:
+      - auth-service
+      - parking-service
+      - reservation-service
+      - payment-service
+    networks:
+      - parking-net
+
+  # --- MİKROSERVİSLER ---
+  auth-service:
+    build: ./services/auth-service
+    container_name: auth_service
+    environment:
+      - PORT=3001
+      - DB_URL=postgres://user:password@auth-db:5432/auth_db
+      - JWT_SECRET=secret_key_123
+    depends_on:
+      - auth-db
+    networks:
+      - parking-net
+
+  parking-service:
+    build: ./services/parking-service
+    container_name: parking_service
+    environment:
+      - PORT=3002
+      - DB_URL=postgres://user:password@parking-db:5432/parking_db
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+    depends_on:
+      - parking-db
+      - rabbitmq
+    networks:
+      - parking-net
+
+  reservation-service:
+    build: ./services/reservation-service
+    container_name: reservation_service
+    environment:
+      - PORT=3003
+      - DB_URL=postgres://user:password@reservation-db:5432/reservation_db
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+    depends_on:
+      - reservation-db
+      - rabbitmq
+    networks:
+      - parking-net
+
+  payment-service:
+    build: ./services/payment-service
+    container_name: payment_service
+    environment:
+      - PORT=3004
+      - DB_URL=postgres://user:password@payment-db:5432/payment_db
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+    depends_on:
+      - payment-db
+      - rabbitmq
+    networks:
+      - parking-net
+
+networks:
+  parking-net:
+    driver: bridge

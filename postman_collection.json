@@ -1,0 +1,57 @@
+{
+  "info": {
+    "name": "Smart Parking API Integration Tests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth - Login Success",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"123456\"\n}"
+        },
+        "url": { "raw": "http://localhost:8000/api/v1/auth/login", "protocol": "http", "host": ["localhost"], "port": "8000", "path": ["api", "v1", "auth", "login"] }
+      }
+    },
+    {
+      "name": "Parking - Get List (v1)",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "http://localhost:8000/api/v1/parkings", "protocol": "http", "host": ["localhost"], "port": "8000", "path": ["api", "v1", "parkings"] }
+      }
+    },
+    {
+      "name": "Reservation - Create Success (Saga)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer MockJWTTokenHere" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"USR-101\",\n  \"parkingSpotId\": \"SPOT-12\",\n  \"amount\": 150\n}"
+        },
+        "url": { "raw": "http://localhost:8000/api/v1/reservations", "protocol": "http", "host": ["localhost"], "port": "8000", "path": ["api", "v1", "reservations"] }
+      }
+    },
+    {
+      "name": "Reservation - Create Fail (Compensating Trigger)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer MockJWTTokenHere" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"USR-101\",\n  \"parkingSpotId\": \"SPOT-12\",\n  \"amount\": 9999\n}"
+        },
+        "url": { "raw": "http://localhost:8000/api/v1/reservations", "protocol": "http", "host": ["localhost"], "port": "8000", "path": ["api", "v1", "reservations"] }
+      }
+    }
+  ]
+}

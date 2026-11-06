@@ -1,0 +1,144 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Akıllı Otopark Rezervasyon Sistemi API",
+    "description": "Servise Dayalı Yazılım Tasarımı dersi için tasarlanmış Akıllı Otopark Rezervasyon API dokümantasyonu.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000/api/v1",
+      "description": "API Gateway Üzerinden v1 Sunucusu"
+    },
+    {
+      "url": "http://localhost:8000/api/v2",
+      "description": "API Gateway Üzerinden v2 Sunucusu (Versiyonlama Şartı)"
+    }
+  ],
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "summary": "Kullanıcı Girişi ve JWT Alma",
+        "tags": ["Kimlik Doğrulama"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "example": "ahmet@example.com" },
+                  "password": { "type": "string", "example": "123456" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Başarılı giriş. JWT Token döner.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token": { "type": "string" },
+                    "role": { "type": "string", "example": "USER" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Hatalı e-posta veya şifre" }
+        }
+      }
+    },
+    "/parkings": {
+      "get": {
+        "summary": "Otopark Listesi ve Genel Bilgiler (v1)",
+        "tags": ["Otopark Servisi"],
+        "responses": {
+          "200": {
+            "description": "Temel otopark listesi döner."
+          }
+        }
+      }
+    },
+    "/v2/parkings": {
+      "get": {
+        "summary": "Canlı Sensör ve Detaylı Otopark Durumu (v2 - Versiyonlama)",
+        "tags": ["Otopark Servisi"],
+        "responses": {
+          "200": {
+            "description": "Sensör verileriyle zenginleştirilmiş otopark listesi döner."
+          }
+        }
+      }
+    },
+    "/reservations": {
+      "post": {
+        "summary": "Yeni Rezervasyon Oluşturma (Saga İş Akışını Başlatır)",
+        "tags": ["Rezervasyon Servisi"],
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["parkingSpotId", "startTime", "endTime"],
+                "properties": {
+                  "parkingSpotId": { "type": "string", "example": "SPOT-102" },
+                  "startTime": { "type": "string", "format": "date-time", "example": "2026-12-20T10:00:00Z" },
+                  "endTime": { "type": "string", "format": "date-time", "example": "2026-12-20T12:00:00Z" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Rezervasyon talebi alındı, RabbitMQ/Saga üzerinden işleniyor."
+          },
+          "400": { "description": "Geçersiz istek parametresi" },
+          "401": { "description": "Yetkisiz erişim (Token geçersiz veya eksik)" }
+        }
+      }
+    },
+    "/sensors/events": {
+      "post": {
+        "summary": "Simüle Sensör Giriş/Çıkış Olayı (Gelişmiş Senaryo)",
+        "tags": ["Sensör Simülasyonu"],
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "spotId": { "type": "string", "example": "SPOT-102" },
+                  "eventType": { "type": "string", "enum": ["ENTRY", "EXIT"], "example": "EXIT" },
+                  "timestamp": { "type": "string", "format": "date-time" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Sensör verisi RabbitMQ kuyruğuna iletildi." }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
