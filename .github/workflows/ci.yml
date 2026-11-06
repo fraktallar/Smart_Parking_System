@@ -17,15 +17,15 @@ jobs:
     - name: Node.js Ortamını Kur
       uses: actions/setup-node@v3
       with:
-        node-config: '18'
+        node-version: '18'
 
-    - name: Docker Compose Kur ve Çalıştır
+    - name: Docker Konteynırlarını Çalıştır
       run: |
-        docker compose up -d --build
+        docker-compose up -d --build || docker compose up -d --build
         docker ps
 
     - name: Servislerin Ayağa Kalkmasını Bekle
-      run: sleep 10
+      run: sleep 15
 
     - name: Postman / Newman Testlerini Çalıştır
       run: |
@@ -33,4 +33,4 @@ jobs:
         newman run postman_collection.json || true
 
     - name: Konteynırları Temizle
-      run: docker compose down
+      run: docker-compose down || docker compose down
