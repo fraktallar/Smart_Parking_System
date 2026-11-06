@@ -27,7 +27,30 @@
     <p> Servise Dayalı Yazılım Tasarımı - API Gateway Portal</p>
     <hr>
 
-    <!-- 1. Giriş Yap Ekranı -->
+    <!-- 1. Kimlik Doğrulama (Auth & Register) -->
+    <div class="card">
+        <h2>1. Kimlik Doğrulama (Auth & Kayıt)</h2>
+        
+        <!-- Kayıt Ol Formu -->
+        <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #ccc;">
+            <h3>📝 Kayıt Ol</h3>
+            <input type="text" id="regName" placeholder="Ad Soyad" value="Ahmet Yılmaz">
+            <input type="email" id="regEmail" placeholder="E-posta" value="ahmet@example.com">
+            <input type="password" id="regPassword" placeholder="Şifre" value="123456">
+            <button onclick="register()">Kayıt Ol</button>
+        </div>
+
+        <!-- Giriş Yap Formu -->
+        <div>
+            <h3>🔑 Giriş Yap</h3>
+            <input type="email" id="loginEmail" placeholder="E-posta" value="ahmet@example.com">
+            <input type="password" id="loginPassword" placeholder="Şifre" value="123456">
+            <button onclick="login()">Giriş Yap (JWT Al)</button>
+            <span id="authStatus" style="margin-left: 10px; font-weight: bold;"></span>
+        </div>
+    </div>
+
+    <!-- 2. Giriş Yap Ekranı -->
     <div class="card">
         <h2>1. Kimlik Doğrulama (Auth)</h2>
         <input type="email" id="email" value="ahmet@example.com">
@@ -36,7 +59,7 @@
         <span id="authStatus" style="margin-left: 10px;"></span>
     </div>
 
-    <!-- 2. Rezervasyon Oluşturma (Saga Trigger) -->
+    <!-- 3. Rezervasyon Oluşturma (Saga Trigger) -->
     <div class="card">
         <h2>2. Rezervasyon Oluştur (Saga Akışı)</h2>
         <label>Park Yeri ID:</label>
@@ -63,6 +86,20 @@
 
 <script>
     let token = "";
+
+    async function register() {
+        const name = document.getElementById('regName').value;
+        const email = document.getElementById('regEmail').value;
+        const password = document.getElementById('regPassword').value;
+
+        const res = await fetch('/api/v1/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, password, role: 'USER' })
+        });
+        const data = await res.json();
+        document.getElementById('logOutput').innerText = "[KAYIT YANITI]\n" + JSON.stringify(data, null, 2);
+    }
 
     async function login() {
         const email = document.getElementById('email').value;
